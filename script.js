@@ -5,6 +5,15 @@ const apiKey =
 
 $(document).ready(function () {
 	weatherFn('vadodara'); // Set Noida as the initial city
+
+	$('#city-input-btn').on('click', function () {
+		const cityName = $('#city-input').val();
+		if (cityName) {
+			weatherFn(cityName);
+		} else {
+			alert('Please enter a city name.');
+		}
+	});
 });
 
 async function weatherFn(cName) {
@@ -33,14 +42,15 @@ function weatherShowFn(data) {
 		text(data.weather[0].description);
 	$('#wind-speed').
 		html(`Wind Speed: ${data.wind.speed} m/s`);
-    $('#city-input-btn').on('click', function () {
-    let cityName = $('#city-input').val();
-    if (cityName) {
-        weatherFn(cityName);
-    } else {
-        alert("Please enter a city name.");
-    }
-});
+
+	// OpenWeather icon code example: "04d"
+	const iconCode = data?.weather?.[0]?.icon;
+	if (iconCode) {
+		const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+		$('#weather-icon').attr('src', iconUrl).show();
+	} else {
+		$('#weather-icon').attr('src', '').hide();
+	}
 
 	$('#weather-info').fadeIn();
 }
