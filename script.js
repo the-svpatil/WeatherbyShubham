@@ -32,6 +32,40 @@ async function weatherFn(cName) {
 	}
 }
 
+function getWeatherFaIconClass(weather) {
+	const id = Number(weather?.id);
+	const main = String(weather?.main || '').toLowerCase();
+	const desc = String(weather?.description || '').toLowerCase();
+	const iconCode = String(weather?.icon || '');
+	const isDay = iconCode.endsWith('d');
+
+	// Thunderstorm (2xx)
+	if (id >= 200 && id <= 232) return 'fas fa-bolt';
+
+	// Drizzle (3xx)
+	if (id >= 300 && id <= 321) return 'fas fa-cloud-rain';
+
+	// Rain (5xx) with stronger differentiation
+	if (id === 500) return 'fas fa-cloud-rain'; // light rain
+	if (id === 501) return 'fas fa-cloud-showers-heavy'; // moderate rain
+	if (id >= 502 && id <= 504) return 'fas fa-cloud-showers-heavy'; // heavy+ rain
+	if (id === 511) return 'far fa-snowflake'; // freezing rain
+	if (id >= 520 && id <= 531) return 'fas fa-cloud-showers-heavy'; // showers
+
+	// Snow (6xx)
+	if (id >= 600 && id <= 622) return 'far fa-snowflake';
+
+	// Atmosphere (7xx): mist/fog/haze/smoke/etc.
+	if (id >= 700 && id <= 781) return 'fas fa-smog';
+	if (main.includes('mist') || desc.includes('mist')) return 'fas fa-smog';
+
+	// Clear / Clouds
+	if (main.includes('clear')) return isDay ? 'fas fa-sun' : 'fas fa-moon';
+	if (main.includes('cloud')) return 'fas fa-cloud';
+
+	return 'fas fa-cloud';
+}
+
 function weatherShowFn(data) {
 	$('#city-name').text(data.name);
 	$('#date').text(moment().
@@ -43,14 +77,10 @@ function weatherShowFn(data) {
 	$('#wind-speed').
 		html(`Wind Speed: ${data.wind.speed} m/s`);
 
-	// OpenWeather icon code example: "04d"
-	const iconCode = data?.weather?.[0]?.icon;
-	if (iconCode) {
-		const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-		$('#weather-icon').attr('src', iconUrl).show();
-	} else {
-		$('#weather-icon').attr('src', '').hide();
-	}
+	const weather0 = data?.weather?.[0];
+	const faClass = getWeatherFaIconClass(weather0);
+	$('#weather-fa-icon').attr('class', faClass);
+	$('#weather-icon').attr('title', weather0?.description || 'Weather');
 
 	$('#weather-info').fadeIn();
 }

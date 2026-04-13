@@ -64,6 +64,17 @@ body {
 #weather-icon {
     width: 100px;
     height: 100px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 6px 0 2px;
+}
+
+#weather-fa-icon {
+    font-size: 64px;
+    line-height: 1;
+    color: #1565C0;
+    filter: drop-shadow(0 6px 10px rgba(0, 0, 0, 0.12));
 }
 
 #temperature {
