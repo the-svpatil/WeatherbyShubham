@@ -1,35 +1,98 @@
 const url =
 	'https://api.openweathermap.org/data/2.5/weather';
+const geoUrl =
+	'https://api.openweathermap.org/geo/1.0/direct';
 const apiKey =
 	'f00c38e0279b7bc85480c3fe775d518c';
+
+let lastSelectedPlaceLabel = '';
 
 $(document).ready(function () {
 	weatherFn('vadodara'); // Set Noida as the initial city
 
 	$('#city-input-btn').on('click', function () {
-		const cityName = $('#city-input').val();
+		const cityName = String($('#city-input').val() || '').trim();
 		if (cityName) {
 			weatherFn(cityName);
 		} else {
 			alert('Please enter a city name.');
 		}
 	});
+
+	// Enter key to search
+	$('#city-input').on('keydown', function (e) {
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			$('#city-input-btn').click();
+		}
+	});
 });
 
+async function fetchSuggestions(query) {
+	const q = String(query || '').trim();
+	if (!q) return [];
+
+	const endpoint = `${geoUrl}?q=${encodeURIComponent(q)}&limit=5&appid=${apiKey}`;
+	const res = await fetch(endpoint);
+	if (!res.ok) return [];
+	return await res.json();
+}
+
 async function weatherFn(cName) {
-	const temp =
-		`${url}?q=${cName}&appid=${apiKey}&units=metric`;
+	const q = String(cName || '').trim();
+	if (!q) return;
+
 	try {
+		// Prefer geocoding first so we can show state/country reliably
+		const places = await fetchSuggestions(q);
+		if (Array.isArray(places) && places.length > 0) {
+			const p0 = places[0];
+			const name = p0?.name ?? q;
+			const state = p0?.state ? `, ${p0.state}` : '';
+			const country = p0?.country ? `, ${p0.country}` : '';
+			lastSelectedPlaceLabel = `${name}${state}${country}`.trim();
+			await weatherByCoords(p0.lat, p0.lon);
+			return;
+		}
+
+		// Fallback: try by name
+		const temp =
+			`${url}?q=${encodeURIComponent(q)}&appid=${apiKey}&units=metric`;
 		const res = await fetch(temp);
+		const data = await res.json();
+		if (res.ok) weatherShowFn(data);
+		else alert('Place not found. Please try a different name.');
+	} catch (error) {
+		console.error('Error fetching weather data:', error);
+	}
+}
+
+async function weatherByCoords(lat, lon) {
+	const endpoint = `${url}?lat=${encodeURIComponent(lat)}&lon=${encodeURIComponent(lon)}&appid=${apiKey}&units=metric`;
+	try {
+		const res = await fetch(endpoint);
 		const data = await res.json();
 		if (res.ok) {
 			weatherShowFn(data);
 		} else {
-			alert('City not found. Please try again.');
+			alert('Unable to fetch weather for that place.');
 		}
 	} catch (error) {
 		console.error('Error fetching weather data:', error);
 	}
+}
+
+function getWeatherThemeClass(weather) {
+	const id = Number(weather?.id);
+	const main = String(weather?.main || '').toLowerCase();
+	if (id >= 200 && id <= 232) return 'theme-thunder';
+	if (id >= 300 && id <= 321) return 'theme-drizzle';
+	if (id >= 500 && id <= 531) return 'theme-rain';
+	if (id >= 600 && id <= 622) return 'theme-snow';
+	if (id >= 700 && id <= 781) return 'theme-mist';
+	if (main.includes('clear')) return 'theme-clear';
+	if (main.includes('cloud')) return 'theme-clouds';
+	return 'theme-default';
 }
 
 function getWeatherFaIconClass(weather) {
@@ -67,20 +130,26 @@ function getWeatherFaIconClass(weather) {
 }
 
 function weatherShowFn(data) {
-	$('#city-name').text(data.name);
-	$('#date').text(moment().
-		format('MMMM Do YYYY, h:mm:ss a')); // Corrected date format to include year
+	$('#city-name').text(lastSelectedPlaceLabel || `${data.name}${data?.sys?.country ? `, ${data.sys.country}` : ''}`);
+	const timezoneOffset = Number(data?.timezone || 0); // seconds
+	const localTime = moment.utc().add(timezoneOffset, 'seconds');
+	$('#date').text(localTime.format('MMMM Do YYYY, h:mm:ss a'));
 	$('#temperature').
 		html(`${Math.round(data.main.temp)}°C`); // Rounded temperature
 	$('#description').
 		text(data.weather[0].description);
 	$('#wind-speed').
-		html(`Wind Speed: ${data.wind.speed} m/s`);
+		html(`Wind Speed: ${Math.round(Number(data.wind.speed) * 3.6)} km/h`);
 
 	const weather0 = data?.weather?.[0];
 	const faClass = getWeatherFaIconClass(weather0);
 	$('#weather-fa-icon').attr('class', faClass);
 	$('#weather-icon').attr('title', weather0?.description || 'Weather');
+
+	const themeClass = getWeatherThemeClass(weather0);
+	$('.weather-card')
+		.removeClass('theme-default theme-clear theme-clouds theme-mist theme-drizzle theme-rain theme-thunder theme-snow')
+		.addClass(themeClass);
 
 	$('#weather-info').fadeIn();
 }

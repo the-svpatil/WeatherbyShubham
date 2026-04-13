@@ -13,12 +13,44 @@ body {
 }
 
 .weather-card {
-    background-color: rgba(255, 255, 255, 0.95);
+    background: rgba(255, 255, 255, 0.95);
     border-radius: 20px;
     padding: 20px;
     box-shadow: 0 0 30px rgba(0, 0, 0, 0.1);
     transition: transform 0.3s ease-in-out;
     width: 450px;
+}
+
+.weather-card.theme-default {
+    background: rgba(255, 255, 255, 0.95);
+}
+
+.weather-card.theme-clear {
+    background: linear-gradient(135deg, rgba(255, 243, 205, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-clouds {
+    background: linear-gradient(135deg, rgba(224, 242, 255, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-mist {
+    background: linear-gradient(135deg, rgba(236, 239, 241, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-drizzle {
+    background: linear-gradient(135deg, rgba(227, 242, 253, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-rain {
+    background: linear-gradient(135deg, rgba(207, 216, 220, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-thunder {
+    background: linear-gradient(135deg, rgba(212, 196, 255, 0.95), rgba(255, 255, 255, 0.95));
+}
+
+.weather-card.theme-snow {
+    background: linear-gradient(135deg, rgba(240, 248, 255, 0.95), rgba(255, 255, 255, 0.95));
 }
 
 .weather-card:hover {
