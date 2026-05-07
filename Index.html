@@ -1,44 +1,43 @@
 <!DOCTYPE html>
-
+<html>
 <head>
+	<meta charset="UTF-8">
 	<link rel="stylesheet" href="style.css">
-	<link rel="stylesheet" href=
-"https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
-	<link rel="stylesheet" href=
-"https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
-	<link rel="stylesheet" href=
-"https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
-	<title>GFG App</title>
-	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/css/all.min.css">
+	<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap">
+	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+	<title>Weather App</title>
 </head>
-
 <body>
+	<div id="map"></div>
 	<div class="container">
 		<div class="weather-card">
-			
-			<h1>
-				Weather App
-			</h1>
-			<input type="text" id="city-input"
-				placeholder="Enter city name">
-			<button id="city-input-btn"
-					onclick="weatherFn($('#city-input').val())">
-					Get Weather
-			</button>
-			<div id="weather-info"
-				class="animate__animated animate__fadeIn">
-				<h3 id="city-name"></h3>
+			<h1>Weather App</h1>
+			<div class="search-box">
+				<input type="text" id="city-input" placeholder="Enter city name">
+				<button id="city-input-btn">Get Weather</button>
+			</div>
+			<div id="weather-info" class="animate__animated animate__fadeIn">
+				<div id="city-header">
+					<img id="country-flag" src="" alt="flag">
+					<h3 id="city-name"></h3>
+				</div>
 				<p id="date"></p>
 				<img id="weather-icon" src="" alt="Weather Icon">
 				<p id="temperature"></p>
 				<p id="description"></p>
 				<p id="wind-speed"></p>
+				<p id="cloud-info"></p>
+				<div class="map-toggles">
+					<label class="toggle-label"><input type="checkbox" id="temp-toggle"> <span>🌡️ Temp Layer</span></label>
+				</div>
 			</div>
 		</div>
 	</div>
-	<script src=
-"https://momentjs.com/downloads/moment.min.js">
-	</script>
+	<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+	<script src="https://momentjs.com/downloads/moment.min.js"></script>
 	<script src="script.js"></script>
 </body>
 </html>

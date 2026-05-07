@@ -1,127 +1,159 @@
-const url =
-	'https://api.openweathermap.org/data/2.5/weather';
-const apiKey =
-	'f00c38e0279b7bc85480c3fe775d518c';
+const url = 'https://api.openweathermap.org/data/2.5/weather';
+const geoUrl = 'https://api.openweathermap.org/geo/1.0/reverse';
+const apiKey = 'f00c38e0279b7bc85480c3fe775d518c';
+
+let map;
+let marker;
+let tempLayer;
 
 $(document).ready(function () {
-	weatherFn('vadodara'); // Set Noida as the initial city
+    initMap();
+    weatherFn('vadodara');
+
+    $('#city-input-btn').on('click', function () {
+        let cityName = $('#city-input').val();
+        if (cityName) {
+            weatherFn(cityName);
+        } else {
+            alert("Please enter a city name.");
+        }
+    });
+
+    $('#city-input').on('keypress', function (e) {
+        if (e.which === 13) {
+            $('#city-input-btn').click();
+        }
+    });
+
+    $('.toggle-label input[type="checkbox"]').on('change', function () {
+        const label = $(this).parent();
+        if ($(this).is(':checked')) {
+            label.addClass('active');
+        } else {
+            label.removeClass('active');
+        }
+    });
+
+    $('#temp-toggle').on('change', function () {
+        if ($(this).is(':checked')) {
+            map.addLayer(tempLayer);
+        } else {
+            map.removeLayer(tempLayer);
+        }
+    });
+
 });
+
+function initMap() {
+    map = L.map('map', {
+        zoomControl: false,
+        attributionControl: false
+    }).setView([20.0, 0.0], 2);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    tempLayer = L.tileLayer(
+        `https://tile.openweathermap.org/map/temp_new/{z}/{x}/{y}.png?appid=${apiKey}`,
+        { opacity: 0.7 }
+    );
+
+    map.on('click', async function (e) {
+        const { lat, lng } = e.latlng;
+        const info = await reverseGeocode(lat, lng);
+        if (info) {
+            const popupContent = info.state
+                ? `<b>${info.name}</b><br>${info.state}, ${info.country}`
+                : `<b>${info.name}</b><br>${info.country}`;
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(popupContent)
+                .openOn(map);
+        } else {
+            L.popup()
+                .setLatLng(e.latlng)
+                .setContent(`Lat: ${lat.toFixed(2)}<br>Lng: ${lng.toFixed(2)}`)
+                .openOn(map);
+        }
+    });
+}
+
+async function reverseGeocode(lat, lon) {
+    try {
+        const res = await fetch(`${geoUrl}?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`);
+        const data = await res.json();
+        if (data.length > 0) {
+            return {
+                name: data[0].name || 'Unknown',
+                state: data[0].state || null,
+                country: data[0].country || ''
+            };
+        }
+    } catch (e) {
+        console.error('Reverse geocode error:', e);
+    }
+    return null;
+}
+
+async function fetchState(lat, lon) {
+    try {
+        const res = await fetch(`${geoUrl}?lat=${lat}&lon=${lon}&limit=1&appid=${apiKey}`);
+        const data = await res.json();
+        if (data.length > 0 && data[0].state) {
+            return data[0].state;
+        }
+    } catch (e) {
+        console.error('Error fetching state:', e);
+    }
+    return null;
+}
 
 async function weatherFn(cName) {
-	const temp =
-		`${url}?q=${cName}&appid=${apiKey}&units=metric`;
-	try {
-		const res = await fetch(temp);
-		const data = await res.json();
-		if (res.ok) {
-			weatherShowFn(data);
-		} else {
-			alert('City not found. Please try again.');
-		}
-	} catch (error) {
-		console.error('Error fetching weather data:', error);
-	}
-}
-
-function weatherShowFn(data) {
-	$('#city-name').text(data.name);
-	$('#date').text(moment().
-		format('MMMM Do YYYY, h:mm:ss a')); // Corrected date format to include year
-	$('#temperature').
-		html(`${Math.round(data.main.temp)}°C`); // Rounded temperature
-	$('#description').
-		text(data.weather[0].description);
-	$('#wind-speed').
-		html(`Wind Speed: ${data.wind.speed} m/s`);
-    $('#city-input-btn').on('click', function () {
-    let cityName = $('#city-input').val();
-    if (cityName) {
-        weatherFn(cityName);
-    } else {
-        alert("Please enter a city name.");
+    const temp = `${url}?q=${cName}&appid=${apiKey}&units=metric`;
+    try {
+        const res = await fetch(temp);
+        const data = await res.json();
+        if (res.ok) {
+            weatherShowFn(data);
+        } else {
+            alert('City not found. Please try again.');
+        }
+    } catch (error) {
+        console.error('Error fetching weather data:', error);
     }
-});
-
-	$('#weather-info').fadeIn();
 }
 
+async function weatherShowFn(data) {
+    const country = data.sys.country;
+    const lat = data.coord.lat;
+    const lon = data.coord.lon;
+    const temp = Math.round(data.main.temp);
+    const desc = data.weather[0].description;
+    const windKmh = (data.wind.speed * 3.6).toFixed(1);
 
+    const state = await fetchState(lat, lon);
 
-// // ============ CONFIG ============
-// const apiKey = "f00c38e0279b7bc85480c3fe775d518c"; // <-- Replace with your OpenWeatherMap key
+    $('#country-flag').attr('src', `https://flagsapi.com/${country}/flat/24.png`).show();
+    $('#city-name').text(state ? `${data.name}, ${state}, ${country}` : `${data.name}, ${country}`);
 
-// // ============ GET WEATHER BY CITY NAME ============
-// function weatherFn(city) {
-//     if (!city) {
-//         alert("Please enter a city name");
-//         return;
-//     }
+    $('#date').text(moment().format('MMMM Do YYYY, h:mm:ss a'));
+    $('#temperature').html(`${temp}°C`);
+    $('#description').text(desc);
+    $('#wind-speed').html(`Wind Speed: ${windKmh} km/h`);
+    $('#cloud-info').html(`Cloud Cover: ${data.clouds?.all || 0}%`);
 
-//     const url = `https://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${apiKey}&units=metric`;
+    const iconCode = data.weather[0].icon;
+    const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
+    $('#weather-icon').attr('src', iconUrl);
 
-//     $.getJSON(url, function (data) {
-//         displayWeather(data);
-//     }).fail(function () {
-//         alert("City not found. Please check the name and try again.");
-//     });
-// }
+    if (marker) {
+        map.removeLayer(marker);
+    }
+    marker = L.marker([lat, lon]).addTo(map)
+        .bindPopup(`<b>${data.name}</b><br>${state ? state + ', ' : ''}${country}<br><b>${temp}°C</b> | ${desc}<br>Clouds: ${data.clouds?.all || 0}%`)
+        .openPopup();
+    map.setView([lat, lon], 10);
 
-// // ============ GET WEATHER BY COORDINATES (LIVE LOCATION) ============
-// function getWeatherByCoords(lat, lon) {
-//     const url = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
-
-//     $.getJSON(url, function (data) {
-//         displayWeather(data);
-// 		console.log(data);
-//     }).fail(function () {
-//         alert("Unable to fetch weather data for your location.");
-//     });
-// }
-
-// // ============ DISPLAY WEATHER INFO ============
-// function displayWeather(data) {
-//     // City and Country
-//     $("#city-name").text(`${data.name}, ${data.sys.country}`);
-
-//     // Weather description
-//     $("#description").text(`Weather: ${data.weather[0].description}`);
-
-//     // Temperature
-//     $("#temperature").text(`Temperature: ${data.main.temp} °C`);
-
-//     // Wind Speed
-//     $("#wind-speed").text(`Wind Speed: ${data.wind.speed} m/s`);
-
-//     // ✅ Weather Icon Fix
-//     const iconCode = data.weather[0].icon; // example: "04d"
-//     const iconUrl = `https://openweathermap.org/img/wn/${iconCode}@2x.png`;
-//     $("#weather-icon").attr("src", iconUrl);
-
-//     // ✅ Show local date/time using timezone offset
-//     const timezoneOffset = data.timezone; // seconds
-//     const localTime = moment.utc().add(timezoneOffset, 'seconds');
-//     $("#date").text(localTime.format('dddd, MMMM Do YYYY, h:mm:ss A'));
-// }
-
-// // ============ GET USER LOCATION (AUTO LOAD) ============
-// function getUserLocation() {
-//     if (navigator.geolocation) {
-//         navigator.geolocation.getCurrentPosition(
-//             (position) => {
-//                 const lat = position.coords.latitude;
-//                 const lon = position.coords.longitude;
-//                 getWeatherByCoords(lat, lon);
-//             },
-//             (error) => {
-//                 console.log("Location access denied.");
-//             }
-//         );
-//     } else {
-//         alert("Geolocation not supported by your browser.");
-//     }
-// }
-
-// // ============ AUTO LOAD ON PAGE OPEN ============
-// $(document).ready(function () {
-//     getUserLocation();
-// });
+    $('#weather-info').fadeIn();
+}
